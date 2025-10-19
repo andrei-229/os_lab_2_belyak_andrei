@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.0)
+
+project(second_laba)
+
+
+set(SOURCE_EXE main.c)
+
+add_executable(run_file ${SOURCE_EXE})
