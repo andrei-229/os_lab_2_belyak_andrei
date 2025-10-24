@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 typedef struct
 {
@@ -45,6 +46,9 @@ void *simulate_games(void *arg)
 
 int main(int argc, char *argv[])
 {
+    struct timespec start_time, end_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+
     int k = 0, total_experiments = 0, max_threads = 1;
     int current_round = 0, score1 = 0, score2 = 0;
 
@@ -66,7 +70,10 @@ int main(int argc, char *argv[])
 
     if (k <= 0 || total_experiments <= 0)
     {
-        fprintf(stderr, "Usage: %s -k K -r ROUND -s1 SCORE1 -s2 SCORE2 -n EXPERIMENTS [-t THREADS]\n", argv[0]);
+        char error_msg[256];
+        int len = snprintf(error_msg, sizeof(error_msg),
+                           "Usage: %s -k K -r ROUND -s1 SCORE1 -s2 SCORE2 -n EXPERIMENTS [-t THREADS]\n", argv[0]);
+        write(2, error_msg, len);
         return 1;
     }
 
@@ -98,10 +105,31 @@ int main(int argc, char *argv[])
     free(threads);
     free(thread_args);
 
-    printf("Total experiments: %d\n", total_experiments);
-    printf("Player 1 wins: %d (%.2f%%)\n", wins1, (100.0 * wins1 / total_experiments));
-    printf("Player 2 wins: %d (%.2f%%)\n", wins2, (100.0 * wins2 / total_experiments));
-    printf("Draws: %d (%.2f%%)\n", draws, (100.0 * draws / total_experiments));
+    char buffer[512];
+    int len;
+
+    len = snprintf(buffer, sizeof(buffer), "Total experiments: %d\n", total_experiments);
+    write(1, buffer, len);
+
+    len = snprintf(buffer, sizeof(buffer), "Player 1 wins: %d %.2f%%\n",
+                   wins1, (100.0 * wins1 / total_experiments));
+    write(1, buffer, len);
+
+    len = snprintf(buffer, sizeof(buffer), "Player 2 wins: %d %.2f%%\n",
+                   wins2, (100.0 * wins2 / total_experiments));
+    write(1, buffer, len);
+
+    len = snprintf(buffer, sizeof(buffer), "Draws: %d %.2f%%\n",
+                   draws, (100.0 * draws / total_experiments));
+    write(1, buffer, len);
+
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+
+    double execution_time = (end_time.tv_sec - start_time.tv_sec) +
+                            (end_time.tv_nsec - start_time.tv_nsec) / 1e9;
+
+    len = snprintf(buffer, sizeof(buffer), "Execution time: %.6f seconds\n", execution_time);
+    write(1, buffer, len);
 
     return 0;
 }
